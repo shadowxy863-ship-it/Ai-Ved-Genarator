@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
         motionValue.textContent = e.target.value;
     });
 
-    // Handle Active States for Tags
+    // Handle Active States for Tags & Ratio
     setupToggleButtons(".tag");
     setupToggleButtons(".ratio-btn");
 
@@ -66,10 +66,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if(this.files.length) handleImageFile(this.files[0]);
     });
 
-    // Function to handle Image File upload and show Prompt Input box
     function handleImageFile(file) {
         if(!file.type.startsWith('image/')) {
-            alert('Please upload an image file format!');
+            alert('Please upload a valid image file format!');
             return;
         }
         selectedFile = file;
@@ -79,27 +78,24 @@ document.addEventListener("DOMContentLoaded", () => {
             previewImage.src = reader.result;
             previewImage.classList.remove('hidden');
             uploadContent.classList.add('hidden');
-            
-            // SHOW the premium text prompt box right after image upload success!
-            promptContainer.classList.remove("hidden");
+            promptContainer.classList.remove("hidden"); // AI প্রম্পট বক্স দেখাবে
         }
     }
 
-    // Clear Text Prompt Button
     clearPromptBtn.addEventListener("click", () => {
         textPrompt.value = "";
     });
 
-    // REAL AI BACKEND CONNECT LOGIC
+    // পরিবর্তিত মূল কোড: যা আপনার লোকাল সার্ভারের সাথে ক্লাউডফ্লেয়ারকে জোড়া দেবে
     generateBtn.addEventListener("click", async () => {
         if(!selectedFile) {
-            alert("Pro Tip: Please upload an image first to activate the AI Core Engine!");
+            alert("Please upload an image first to activate the AI Core Engine!");
             return;
         }
 
-        // Hide input panels, Show rendering box
+        // UI চেঞ্জ করে লোডার স্ক্রিন দেখানো
         dropZone.classList.add("hidden");
-        promptContainer.classList.add("hidden"); // hide text prompt during render
+        promptContainer.classList.add("hidden");
         outputBox.classList.remove("hidden");
         videoLoader.classList.remove("hidden");
         videoWrapper.classList.add("hidden");
@@ -107,23 +103,23 @@ document.addEventListener("DOMContentLoaded", () => {
         generateBtn.disabled = true;
         generateBtn.style.opacity = "0.5";
 
-        // Progress Counter Render Animation (Gives an AI processing feel)
+        // প্রোগ্রেস বার কাউন্টার অ্যানিমেশন
         let progress = 0;
         const progressInterval = setInterval(() => {
             if (progress < 95) {
                 progress += Math.floor(Math.random() * 3) + 1;
                 progressText.textContent = `${progress}%`;
             }
-        }, 1000);
+        }, 1200);
 
-        // Preparing data to send to Node.js server
+        // ডাটা প্যাক করার জন্য FormData
         const formData = new FormData();
         formData.append('image', selectedFile);
         formData.append('motionStrength', motionStrength.value);
         formData.append('prompt', textPrompt.value);
 
         try {
-            // CRITICAL CHANGE: Using Local IP 127.0.0.1 to prevent Cloudflare HTTPS from blocking local requests
+            // লোকালহোস্টের আইপি ব্যবহার করে আপনার নিজের পিসির ব্যাকএন্ডে রিকোয়েস্ট পাঠানো হচ্ছে
             const response = await fetch('http://127.0.0.1:5000/api/generate-video', {
                 method: 'POST',
                 body: formData
@@ -135,23 +131,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 clearInterval(progressInterval);
                 progressText.textContent = "100%";
 
-                // Hide loader, show video player
                 videoLoader.classList.add("hidden");
                 videoWrapper.classList.remove("hidden");
                 
-                // Inject real AI generated video source link
+                // AI-এর তৈরি করা আসল ভিডিও প্লেয়ারে সেট করা
                 generatedVideo.src = data.videoUrl;
                 generatedVideo.play();
             } else {
-                throw new Error(data.error || 'AI server failed to return video response.');
+                throw new Error(data.error || 'AI Server Error. Check your API token or Server terminal.');
             }
 
         } catch (error) {
             clearInterval(progressInterval);
             console.error("Error details:", error);
-            alert("ভিডিও জেনারেট করা যায়নি। নিশ্চিত করুন আপনার কম্পিউটারে 'node server.js' সচল বা রান করা আছে।");
             
-            // Revert UI back to original state on error
+            // সুন্দর ও স্পষ্ট এরর মেসেজ যাতে বুঝতে সুবিধা হয় কী করতে হবে
+            alert("ভিডিও জেনারেট করা যায়নি!\n\nসম্ভাব্য কারণ ও সমাধান:\n১. নিশ্চিত করুন আপনার কম্পিউটারের টার্মিনালে 'node server.js' সচল আছে।\n২. ব্রাউজারের উপরে তালা (🔒) আইকনে ক্লিক করে 'Insecure Content' অপশনটি 'Allow' করে দিন।");
+            
+            // ভুল হলে আগের অবস্থায় ব্যাক করা
             outputBox.classList.add("hidden");
             dropZone.classList.remove("hidden");
             promptContainer.classList.remove("hidden");
@@ -161,19 +158,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Remix Button Logic (Reset Workspace)
+    // Remix Button
     remixBtn.addEventListener("click", () => {
         outputBox.classList.add("hidden");
         dropZone.classList.remove("hidden");
-        promptContainer.classList.remove("hidden"); // show text prompt back
+        promptContainer.classList.remove("hidden");
     });
 
-    // Download Button Trigger
+    // Download Video
     downloadBtn.addEventListener("click", () => {
         if(generatedVideo.src) {
             const a = document.createElement('a');
             a.href = generatedVideo.src;
-            a.download = 'motionai-cinematic-render.mp4';
+            a.download = 'motionai-video.mp4';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
