@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MotionAI - Professional Image to Video AI Generator</title>
-    <meta name="description" content="Transform your static images into stunning, high-quality cinematic videos using advanced MotionAI technology. Try it for free!">
+    <meta name="description" content="Transform your static images into stunning, high-quality cinematic videos using advanced MotionAI technology with custom prompts. Try it for free!">
     <link rel="stylesheet" href="style.css">
+    <!-- FontAwesome for Pro Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 </head>
 <body>
 
+    <!-- Header / Navbar -->
     <header class="navbar">
         <div class="logo">
             <i class="fa-solid fa-wand-magic-sparkles"></i> <span>Motion<span>AI</span></span>
@@ -27,15 +28,18 @@
     </header>
 
     <main>
+        <!-- Hero Section -->
         <section class="hero">
             <div class="hero-badge"><i class="fa-solid fa-bolt"></i> Next-Gen AI Video Engine v2.5</div>
             <h1>Turn Static Images Into <span class="gradient-text">Cinematic Videos</span></h1>
-            <p>Bring your photos to life with professional-grade AI animation. Perfect for creators, marketers, and studios.</p>
+            <p>Bring your photos to life with professional-grade AI animation and custom motion prompts.</p>
         </section>
 
+        <!-- Main Studio AI Generator Interface -->
         <section class="studio-container" id="generator">
             <div class="studio-grid">
                 
+                <!-- Left Panel: Controls -->
                 <div class="control-panel">
                     <h3><i class="fa-solid fa-sliders"></i> Generation Settings</h3>
                     
@@ -79,7 +83,9 @@
                     </button>
                 </div>
 
+                <!-- Right Panel: Workspace -->
                 <div class="workspace-panel">
+                    <!-- Upload Box Container -->
                     <div class="upload-box" id="dropZone">
                         <input type="file" id="imageInput" accept="image/*" hidden>
                         <div class="upload-content" id="uploadContent">
@@ -93,6 +99,16 @@
                         <img id="previewImage" src="" alt="Preview" class="hidden">
                     </div>
 
+                    <!-- Pro AI Text Prompt Input Box (Shows after upload) -->
+                    <div class="prompt-container hidden" id="promptContainer">
+                        <label><i class="fa-solid fa-wand-magic-sparkles"></i> Describe the motion / AI Prompt</label>
+                        <div class="prompt-input-wrapper">
+                            <textarea id="textPrompt" placeholder="e.g., Make the clouds move slowly, cinematic lighting, ultra-realistic hair blowing in the wind..."></textarea>
+                            <button class="btn-clear-prompt" id="clearPromptBtn" title="Clear text"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Output Preview Window -->
                     <div class="output-box hidden" id="outputBox">
                         <div class="loader-container" id="videoLoader">
                             <div class="spinner"></div>
