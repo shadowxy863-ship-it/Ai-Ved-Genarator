@@ -1,3 +1,4 @@
+// script.js
 document.addEventListener("DOMContentLoaded", () => {
     // DOM Elements
     const dropZone = document.getElementById("dropZone");
@@ -89,8 +90,8 @@ document.addEventListener("DOMContentLoaded", () => {
         textPrompt.value = "";
     });
 
-    // AI Simulation Generation Logic
-    generateBtn.addEventListener("click", () => {
+    // REAL AI BACKEND CONNECT LOGIC
+    generateBtn.addEventListener("click", async () => {
         if(!selectedFile) {
             alert("Pro Tip: Please upload an image first to activate the AI Core Engine!");
             return;
@@ -103,29 +104,61 @@ document.addEventListener("DOMContentLoaded", () => {
         videoLoader.classList.remove("hidden");
         videoWrapper.classList.add("hidden");
 
-        let progress = 0;
         generateBtn.disabled = true;
         generateBtn.style.opacity = "0.5";
 
-        // Progress Counter Render Animation
-        const interval = setInterval(() => {
-            progress += Math.floor(Math.random() * 8) + 2;
-            if(progress >= 100) {
-                progress = 100;
-                clearInterval(interval);
-                
-                // Show Generated Dummy Premium Stock Video
+        // Progress Counter Render Animation (Gives an AI processing feel)
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            if (progress < 95) {
+                progress += Math.floor(Math.random() * 3) + 1;
+                progressText.textContent = `${progress}%`;
+            }
+        }, 1000);
+
+        // Preparing data to send to Node.js server
+        const formData = new FormData();
+        formData.append('image', selectedFile);
+        formData.append('motionStrength', motionStrength.value);
+        formData.append('prompt', textPrompt.value);
+
+        try {
+            // CRITICAL CHANGE: Using Local IP 127.0.0.1 to prevent Cloudflare HTTPS from blocking local requests
+            const response = await fetch('http://127.0.0.1:5000/api/generate-video', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.videoUrl) {
+                clearInterval(progressInterval);
+                progressText.textContent = "100%";
+
+                // Hide loader, show video player
                 videoLoader.classList.add("hidden");
                 videoWrapper.classList.remove("hidden");
-                generateBtn.disabled = false;
-                generateBtn.style.opacity = "1";
                 
-                // Injecting high-quality placeholder video link for simulation
-                generatedVideo.src = "https://assets.mixkit.co/videos/preview/mixkit-abstract-laser-lights-background-32124-large.mp4";
+                // Inject real AI generated video source link
+                generatedVideo.src = data.videoUrl;
                 generatedVideo.play();
+            } else {
+                throw new Error(data.error || 'AI server failed to return video response.');
             }
-            progressText.textContent = `${progress}%`;
-        }, 250);
+
+        } catch (error) {
+            clearInterval(progressInterval);
+            console.error("Error details:", error);
+            alert("ভিডিও জেনারেট করা যায়নি। নিশ্চিত করুন আপনার কম্পিউটারে 'node server.js' সচল বা রান করা আছে।");
+            
+            // Revert UI back to original state on error
+            outputBox.classList.add("hidden");
+            dropZone.classList.remove("hidden");
+            promptContainer.classList.remove("hidden");
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.style.opacity = "1";
+        }
     });
 
     // Remix Button Logic (Reset Workspace)
