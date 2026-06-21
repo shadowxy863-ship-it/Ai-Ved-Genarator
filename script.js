@@ -23,12 +23,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let selectedFile = null;
 
-    // Motion strength input listener
     motionStrength.addEventListener("input", (e) => {
         motionValue.textContent = e.target.value;
     });
 
-    // Handle Active States for Tags & Ratio
     setupToggleButtons(".tag");
     setupToggleButtons(".ratio-btn");
 
@@ -68,7 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function handleImageFile(file) {
         if(!file.type.startsWith('image/')) {
-            alert('Please upload a valid image file format!');
+            alert('Please upload a valid image file!');
             return;
         }
         selectedFile = file;
@@ -78,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
             previewImage.src = reader.result;
             previewImage.classList.remove('hidden');
             uploadContent.classList.add('hidden');
-            promptContainer.classList.remove("hidden"); // AI প্রম্পট বক্স দেখাবে
+            promptContainer.classList.remove("hidden");
         }
     }
 
@@ -86,14 +84,13 @@ document.addEventListener("DOMContentLoaded", () => {
         textPrompt.value = "";
     });
 
-    // পরিবর্তিত মূল কোড: যা আপনার লোকাল সার্ভারের সাথে ক্লাউডফ্লেয়ারকে জোড়া দেবে
+    // চূড়ান্ত অনলাইন API কানেকশন লজিক
     generateBtn.addEventListener("click", async () => {
         if(!selectedFile) {
-            alert("Please upload an image first to activate the AI Core Engine!");
+            alert("Please upload an image first!");
             return;
         }
 
-        // UI চেঞ্জ করে লোডার স্ক্রিন দেখানো
         dropZone.classList.add("hidden");
         promptContainer.classList.add("hidden");
         outputBox.classList.remove("hidden");
@@ -103,7 +100,6 @@ document.addEventListener("DOMContentLoaded", () => {
         generateBtn.disabled = true;
         generateBtn.style.opacity = "0.5";
 
-        // প্রোগ্রেস বার কাউন্টার অ্যানিমেশন
         let progress = 0;
         const progressInterval = setInterval(() => {
             if (progress < 95) {
@@ -112,15 +108,17 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }, 1200);
 
-        // ডাটা প্যাক করার জন্য FormData
         const formData = new FormData();
         formData.append('image', selectedFile);
         formData.append('motionStrength', motionStrength.value);
         formData.append('prompt', textPrompt.value);
 
         try {
-            // লোকালহোস্টের আইপি ব্যবহার করে আপনার নিজের পিসির ব্যাকএন্ডে রিকোয়েস্ট পাঠানো হচ্ছে
-            const response = await fetch('http://127.0.0.1:5000/api/generate-video', {
+            // ⚠️ অত্যন্ত গুরুত্বপূর্ণ: 'YOUR_RENDER_BACKEND_URL' এর জায়গায় আপনার Render থেকে পাওয়া আসল লাইভ URL-টি বসাবেন।
+            // উদাহরণস্বরূপ: 'https://motion-ai-backend.onrender.com'
+            const RENDER_URL = 'YOUR_RENDER_BACKEND_URL'; 
+            
+            const response = await fetch(`${RENDER_URL}/api/generate-video`, {
                 method: 'POST',
                 body: formData
             });
@@ -134,21 +132,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 videoLoader.classList.add("hidden");
                 videoWrapper.classList.remove("hidden");
                 
-                // AI-এর তৈরি করা আসল ভিডিও প্লেয়ারে সেট করা
                 generatedVideo.src = data.videoUrl;
                 generatedVideo.play();
             } else {
-                throw new Error(data.error || 'AI Server Error. Check your API token or Server terminal.');
+                throw new Error(data.error || 'AI Server returned an error.');
             }
 
         } catch (error) {
             clearInterval(progressInterval);
-            console.error("Error details:", error);
+            console.error(error);
+            alert("ভিডিও তৈরি করা যায়নি। এরর মেসেজ: " + error.message);
             
-            // সুন্দর ও স্পষ্ট এরর মেসেজ যাতে বুঝতে সুবিধা হয় কী করতে হবে
-            alert("ভিডিও জেনারেট করা যায়নি!\n\nসম্ভাব্য কারণ ও সমাধান:\n১. নিশ্চিত করুন আপনার কম্পিউটারের টার্মিনালে 'node server.js' সচল আছে।\n২. ব্রাউজারের উপরে তালা (🔒) আইকনে ক্লিক করে 'Insecure Content' অপশনটি 'Allow' করে দিন।");
-            
-            // ভুল হলে আগের অবস্থায় ব্যাক করা
             outputBox.classList.add("hidden");
             dropZone.classList.remove("hidden");
             promptContainer.classList.remove("hidden");
@@ -158,14 +152,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Remix Button
     remixBtn.addEventListener("click", () => {
         outputBox.classList.add("hidden");
         dropZone.classList.remove("hidden");
         promptContainer.classList.remove("hidden");
     });
 
-    // Download Video
     downloadBtn.addEventListener("click", () => {
         if(generatedVideo.src) {
             const a = document.createElement('a');
