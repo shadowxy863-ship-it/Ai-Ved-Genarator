@@ -1,81 +1,149 @@
-// server.js
-const express = require('express');
-const cors = require('cors');
-const multer = require('multer');
-const { Replicate } = require('replicate');
-
-const app = express();
-
-// Render হোস্টিং বা লোকালহোস্টের পোর্ট ম্যানেজমেন্ট
-const PORT = process.env.PORT || 5000;
-
-// Cloudflare থেকে আসা সমস্ত রিকোয়েস্ট নিরাপদভাবে রিসিভ করার জন্য CORS সেটিংস
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-
-// ফাইল আপলোড মেমোরিতে হ্যান্ডেল করার জন্য Multer
-const upload = multer({ storage: multer.memoryStorage() });
-
-// ⚠️ এখানে সরাসরি আপনার Replicate API Token-টি বসানো হয়েছে
-// টোকেনটি সরাসরি নিচে বসিয়ে দিলে Render বা লোকালহোস্ট—সব জায়গায় কোনো এরর ছাড়াই রান করবে
-const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN || "এখানে_আপনার_REPLICATE_API_TOKEN_বসাবেন";
-
-const replicate = new Replicate({
-  auth: REPLICATE_TOKEN,
-});
-
-// সার্ভার লাইভ আছে কিনা ব্রাউজারে চেক করার রুট
-app.get('/', (req, res) => {
-  res.send('MotionAI Core Engine is Running Successfully!');
-});
-
-// প্রধান ভিডিও জেনারেশন এপিআই (API Endpoint)
-app.post('/api/generate-video', upload.single('image'), async (req, res) => {
-  try {
-    // ১. টোকেন চেক করা (টোকেন খালি থাকলে যেন Unexpected End of JSON না হয়ে স্পষ্ট এরর দেখায়)
-    if (!REPLICATE_TOKEN || REPLICATE_TOKEN.includes("এখানে_আপনার_REPLICATE_API_TOKEN_বসাবেন")) {
-      console.error("Error: Replicate API Token is missing!");
-      return res.status(401).json({ error: 'সার্ভারে Replicate API Token বসানো হয়নি। অনুগ্রহ করে আপনার server.js ফাইলে টোকেনটি বসান।' });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({ error: 'Please upload an image file.' });
-    }
-
-    const motionStrength = req.body.motionStrength || 5;
+document.addEventListener("DOMContentLoaded", () => {
+    // DOM Elements
+    const dropZone = document.getElementById("dropZone");
+    const imageInput = document.getElementById("imageInput");
+    const previewImage = document.getElementById("previewImage");
+    const uploadContent = document.getElementById("uploadContent");
+    const promptContainer = document.getElementById("promptContainer");
+    const textPrompt = document.getElementById("textPrompt");
+    const clearPromptBtn = document.getElementById("clearPromptBtn");
     
-    // ছবিকে Base64 এ রূপান্তর
-    const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    const generateBtn = document.getElementById("generateBtn");
+    const outputBox = document.getElementById("outputBox");
+    const videoLoader = document.getElementById("videoLoader");
+    const videoWrapper = document.getElementById("videoWrapper");
+    const progressText = document.getElementById("progressText");
+    const generatedVideo = document.getElementById("generatedVideo");
+    const remixBtn = document.getElementById("remixBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
 
-    console.log('AI Generation Started on Replicate...');
+    const motionStrength = document.getElementById("motionStrength");
+    const motionValue = document.getElementById("motionValue");
 
-    // Stable Video Diffusion (SVD) মডেল রান করা
-    const model = "stability-ai/stable-video-diffusion:3f0457140d9bc364733b246a7163b54af45e2a17f01fa28af1d121e4b36c77cb";
-    const input = {
-      input_image: base64Image,
-      motion_bucket_id: parseInt(motionStrength) * 12,
-      video_length: "14_frames_with_svd" 
-    };
+    let selectedFile = null;
 
-    // Replicate AI সার্ভার থেকে রেসপন্স নেওয়া
-    const output = await replicate.run(model, { input });
+    // Motion strength input listener
+    motionStrength.addEventListener("input", (e) => {
+        motionValue.textContent = e.target.value;
+    });
 
-    console.log('AI Generation Success!');
+    // Handle Active States for Tags
+    setupToggleButtons(".tag");
+    setupToggleButtons(".ratio-btn");
 
-    // জেনারেট হওয়া আসল ভিডিওর URL ফ্রন্টএন্ডে পাঠানো
-    if (output && (output[0] || output)) {
-       return res.json({ videoUrl: output[0] || output });
-    } else {
-       throw new Error("Replicate did not return any video URL.");
+    function setupToggleButtons(selector) {
+        document.querySelectorAll(selector).forEach(btn => {
+            btn.addEventListener("click", function() {
+                document.querySelectorAll(selector).forEach(b => b.classList.remove("active"));
+                this.classList.add("active");
+            });
+        });
     }
 
-  } catch (error) {
-    console.error('Detailed Server Error:', error.message);
-    // ফ্রন্টএন্ড যাতে ফাঁকা রেসপন্স পেয়ে ক্র্যাশ না করে, তাই স্পষ্ট এরর মেসেজ পাঠানো হচ্ছে
-    res.status(500).json({ error: `AI Video generation failed: ${error.message}` });
-  }
-});
+    // Drag and Drop Logic
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        }, false);
+    });
 
-app.listen(PORT, () => {
-  console.log(`Server is live on port ${PORT}`);
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+        }, false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if(files.length) handleImageFile(files[0]);
+    });
+
+    imageInput.addEventListener('change', function() {
+        if(this.files.length) handleImageFile(this.files[0]);
+    });
+
+    // Function to handle Image File upload and show Prompt Input box
+    function handleImageFile(file) {
+        if(!file.type.startsWith('image/')) {
+            alert('Please upload an image file format!');
+            return;
+        }
+        selectedFile = file;
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onloadend = function() {
+            previewImage.src = reader.result;
+            previewImage.classList.remove('hidden');
+            uploadContent.classList.add('hidden');
+            
+            // SHOW the premium text prompt box right after image upload success!
+            promptContainer.classList.remove("hidden");
+        }
+    }
+
+    // Clear Text Prompt Button
+    clearPromptBtn.addEventListener("click", () => {
+        textPrompt.value = "";
+    });
+
+    // AI Simulation Generation Logic
+    generateBtn.addEventListener("click", () => {
+        if(!selectedFile) {
+            alert("Pro Tip: Please upload an image first to activate the AI Core Engine!");
+            return;
+        }
+
+        // Hide input panels, Show rendering box
+        dropZone.classList.add("hidden");
+        promptContainer.classList.add("hidden"); // hide text prompt during render
+        outputBox.classList.remove("hidden");
+        videoLoader.classList.remove("hidden");
+        videoWrapper.classList.add("hidden");
+
+        let progress = 0;
+        generateBtn.disabled = true;
+        generateBtn.style.opacity = "0.5";
+
+        // Progress Counter Render Animation
+        const interval = setInterval(() => {
+            progress += Math.floor(Math.random() * 8) + 2;
+            if(progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
+                
+                // Show Generated Dummy Premium Stock Video
+                videoLoader.classList.add("hidden");
+                videoWrapper.classList.remove("hidden");
+                generateBtn.disabled = false;
+                generateBtn.style.opacity = "1";
+                
+                // Injecting high-quality placeholder video link for simulation
+                generatedVideo.src = "https://assets.mixkit.co/videos/preview/mixkit-abstract-laser-lights-background-32124-large.mp4";
+                generatedVideo.play();
+            }
+            progressText.textContent = `${progress}%`;
+        }, 250);
+    });
+
+    // Remix Button Logic (Reset Workspace)
+    remixBtn.addEventListener("click", () => {
+        outputBox.classList.add("hidden");
+        dropZone.classList.remove("hidden");
+        promptContainer.classList.remove("hidden"); // show text prompt back
+    });
+
+    // Download Button Trigger
+    downloadBtn.addEventListener("click", () => {
+        if(generatedVideo.src) {
+            const a = document.createElement('a');
+            a.href = generatedVideo.src;
+            a.download = 'motionai-cinematic-render.mp4';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    });
 });
