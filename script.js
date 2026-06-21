@@ -4,6 +4,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const imageInput = document.getElementById("imageInput");
     const previewImage = document.getElementById("previewImage");
     const uploadContent = document.getElementById("uploadContent");
+    const promptContainer = document.getElementById("promptContainer");
+    const textPrompt = document.getElementById("textPrompt");
+    const clearPromptBtn = document.getElementById("clearPromptBtn");
+    
     const generateBtn = document.getElementById("generateBtn");
     const outputBox = document.getElementById("outputBox");
     const videoLoader = document.getElementById("videoLoader");
@@ -61,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if(this.files.length) handleImageFile(this.files[0]);
     });
 
+    // Function to handle Image File upload and show Prompt Input box
     function handleImageFile(file) {
         if(!file.type.startsWith('image/')) {
             alert('Please upload an image file format!');
@@ -73,18 +78,27 @@ document.addEventListener("DOMContentLoaded", () => {
             previewImage.src = reader.result;
             previewImage.classList.remove('hidden');
             uploadContent.classList.add('hidden');
+            
+            // SHOW the premium text prompt box right after image upload success!
+            promptContainer.classList.remove("hidden");
         }
     }
+
+    // Clear Text Prompt Button
+    clearPromptBtn.addEventListener("click", () => {
+        textPrompt.value = "";
+    });
 
     // AI Simulation Generation Logic
     generateBtn.addEventListener("click", () => {
         if(!selectedFile) {
-            alert("Pro Tip: Please upload or drop an image first to activate the AI Core Engine!");
+            alert("Pro Tip: Please upload an image first to activate the AI Core Engine!");
             return;
         }
 
-        // UI Transformation to Render Mode
+        // Hide input panels, Show rendering box
         dropZone.classList.add("hidden");
+        promptContainer.classList.add("hidden"); // hide text prompt during render
         outputBox.classList.remove("hidden");
         videoLoader.classList.remove("hidden");
         videoWrapper.classList.add("hidden");
@@ -111,13 +125,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 generatedVideo.play();
             }
             progressText.textContent = `${progress}%`;
-        }, 300);
+        }, 250);
     });
 
-    // Remix Button Logic
+    // Remix Button Logic (Reset Workspace)
     remixBtn.addEventListener("click", () => {
         outputBox.classList.add("hidden");
         dropZone.classList.remove("hidden");
+        promptContainer.classList.remove("hidden"); // show text prompt back
     });
 
     // Download Button Trigger
